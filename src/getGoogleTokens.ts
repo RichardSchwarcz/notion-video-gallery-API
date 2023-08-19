@@ -36,3 +36,27 @@ export async function getGoogleOAuthTokens(
     throw new Error(error.message)
   }
 }
+
+export async function refreshGoogleOAuthAccessToken(refreshToken: string) {
+  const url = 'https://oauth2.googleapis.com/token'
+
+  const values = {
+    client_id: process.env.GOOGLE_CLIENT_ID as string,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET as string,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token',
+  }
+
+  try {
+    const response = await axios.post(url, null, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      params: values,
+    })
+    return response.data
+  } catch (error: any) {
+    console.error(error, 'Failed to refresh access token')
+    // throw new Error(error.message)
+  }
+}
