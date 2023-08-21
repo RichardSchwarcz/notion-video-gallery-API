@@ -1,10 +1,10 @@
 import axios from 'axios'
 
-export async function getVideos(accessToken: string) {
+export async function fetchYoutubeVideos(accessToken: string) {
   const rootURL = 'https://www.googleapis.com/youtube/v3/playlistItems'
 
   const values = {
-    part: 'contentDetails',
+    part: 'snippet',
     maxResults: '10',
     playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
   }

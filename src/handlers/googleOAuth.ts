@@ -1,19 +1,11 @@
 import { Request, Response } from 'express'
-import router from './router'
-import { getGoogleOAuthURL } from '../googleOAuthURL'
 import {
   getGoogleOAuthTokens,
   refreshGoogleOAuthAccessToken,
 } from '../getGoogleTokens'
 import { parse } from 'cookie'
 
-router.get('/auth', (req: Request, res: Response) => {
-  res.json({
-    generated: getGoogleOAuthURL(),
-  })
-})
-
-router.get('/auth/google/redirect', async (req: Request, res: Response) => {
+export async function getTokensAndRedirect(req: Request, res: Response) {
   // get code from URL
   const code = req.query.code as string
 
@@ -33,14 +25,14 @@ router.get('/auth/google/redirect', async (req: Request, res: Response) => {
       tokens: tokens,
     })
 
-    // res.redirect('/api/videos')
+    res.redirect('/api/videos')
   } catch (error: any) {
     console.log(error.message)
     res.redirect('/api/auth')
   }
-})
+}
 
-router.get('/auth/refresh', async (req: Request, res: Response) => {
+export async function refreshAccessToken(req: Request, res: Response) {
   const cookieHeader = req.headers.cookie
 
   if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -64,4 +56,4 @@ router.get('/auth/refresh', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.log(error.message)
   }
-})
+}

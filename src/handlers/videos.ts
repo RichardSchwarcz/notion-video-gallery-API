@@ -1,9 +1,8 @@
-import { Request, Response } from 'express'
 import { parse } from 'cookie'
-import router from './router'
-import { getVideos } from '../getVideos'
+import { Request, Response } from 'express'
+import { fetchYoutubeVideos } from '../fetchYoutubeVideos'
 
-router.get('/videos', async (req: Request, res: Response) => {
+export async function getVideos(req: Request, res: Response) {
   const cookieHeader = req.headers.cookie
 
   if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -16,12 +15,12 @@ router.get('/videos', async (req: Request, res: Response) => {
 
   if (!accessToken || typeof accessToken !== 'string') {
     console.log('Access token cookie is missing or not a string.')
-    res.redirect('/auth')
+    res.redirect('/api/loginURL')
     return
   }
 
   try {
-    const videos = await getVideos(accessToken)
+    const videos = await fetchYoutubeVideos(accessToken)
     res.json({
       videos: videos,
     })
@@ -32,4 +31,4 @@ router.get('/videos', async (req: Request, res: Response) => {
       res.redirect('/api/error/unauthorized')
     }
   }
-})
+}
