@@ -7,6 +7,7 @@ import {
 import { handleGetVideos } from './handlers/youtubeVideosHandler'
 import axios from 'axios'
 import { parse } from 'cookie'
+import { handleGetDbEntries } from './handlers/notionDatabaseHandler'
 
 const router = Router()
 
@@ -53,29 +54,7 @@ router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 router.get('/youtube/videos', handleGetVideos)
 
 // notion database
-router.get('/notion/videos', async (res: Response) => {
-  const url = `https://api.notion.com/v1/databases/${process.env.NOTION_DATABASE_ID}/query`
-
-  const options = {
-    headers: {
-      Authorization: `Bearer ${process.env.NOTION_SECRET}`,
-      'Notion-Version': '2022-06-28',
-      'Content-Type': 'application/json',
-      accept: 'application/json',
-    },
-  }
-
-  try {
-    const response = await axios.post(url, { page_size: 100 }, options)
-    const data = await response.data
-
-    res.json({
-      items: data,
-    })
-  } catch (error: any) {
-    console.log(error, 'Failed to fetch notion database items')
-  }
-})
+router.get('/notion/videos', handleGetDbEntries)
 
 // error
 router.get('/error/unauthorized', (res: Response) => {
