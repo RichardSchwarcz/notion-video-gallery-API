@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Request, Response } from 'express'
 
-export async function handleGetDbEntries(req: Request, res: Response) {
+export async function handleGetNotionVideos(req: Request, res: Response) {
   const url = `https://api.notion.com/v1/databases/${process.env.NOTION_DATABASE_ID}/query`
 
   const options = {

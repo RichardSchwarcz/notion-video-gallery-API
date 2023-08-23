@@ -4,10 +4,10 @@ import {
   handleOAuthURL,
   handleRefreshAccessToken,
 } from './handlers/googleOAuthHandler'
-import { handleGetVideos } from './handlers/youtubeVideosHandler'
+import { handleGetYoutubeVideos } from './handlers/youtubeVideosHandler'
 import axios from 'axios'
 import { parse } from 'cookie'
-import { handleGetDbEntries } from './handlers/notionDatabaseHandler'
+import { handleGetNotionVideos } from './handlers/notionDatabaseHandler'
 
 const router = Router()
 
@@ -17,6 +17,7 @@ router.use(
   (req: Request, res: Response, next: NextFunction) => {
     const cookieHeader = req.headers.cookie
 
+    // check cookies header
     if (!cookieHeader || typeof cookieHeader !== 'string') {
       console.log('Cookie header is missing or not a string.')
       res.redirect('/api/youtube/auth')
@@ -26,12 +27,14 @@ router.use(
     const parsedCookies = parse(cookieHeader)
     const { access_token, refresh_token } = parsedCookies
 
+    // check access token
     if (!access_token || typeof access_token !== 'string') {
       console.log('Access token is missing or not a string.')
       res.redirect('/api/youtube/auth/refresh')
       return
     }
 
+    // check refresh token
     if (!refresh_token || typeof refresh_token !== 'string') {
       console.log('Refresh token is missing or not a string.')
       res.redirect('/api/youtube/auth')
@@ -50,11 +53,10 @@ router.get('/youtube/auth/redirect', handleGetOAuthTokens)
 router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 
 // youtube videos
-// ! you can have more than one handler. You can even define them in an array. Make sure to call next() at the end of every handler
-router.get('/youtube/videos', handleGetVideos)
+router.get('/youtube/videos', handleGetYoutubeVideos)
 
 // notion database
-router.get('/notion/videos', handleGetDbEntries)
+router.get('/notion/videos', handleGetNotionVideos)
 
 // error
 router.get('/error/unauthorized', (res: Response) => {

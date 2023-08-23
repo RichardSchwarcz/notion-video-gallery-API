@@ -2,7 +2,7 @@ import { parse } from 'cookie'
 import { Request, Response } from 'express'
 import { fetchYoutubeVideos } from '../fetchYoutubeVideos'
 
-export async function handleGetVideos(req: Request, res: Response) {
+export async function handleGetYoutubeVideos(req: Request, res: Response) {
   const cookieHeader = req.headers.cookie
 
   if (!cookieHeader || typeof cookieHeader !== 'string') {
