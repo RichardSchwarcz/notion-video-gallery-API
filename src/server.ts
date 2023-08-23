@@ -1,9 +1,9 @@
-import express from 'express'
-import router from './routes/router'
+import express, { Request, Response } from 'express'
+import router from './router'
 
 const app = express()
 
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('Welcome!')
 })
 
