@@ -1,18 +1,18 @@
 import axios from 'axios'
 import qs from 'qs'
 
-interface GoogleTokens {
+interface OAuthTokens {
   // depends on scopes
   access_token: string
-  expires_in: Number
+  expires_in: number
   refresh_token: string
   scope: string
   token_type: string
 }
 
-export async function getGoogleOAuthTokens(
-  code: string
-): Promise<GoogleTokens> {
+interface refreshedAccessToken extends Omit<OAuthTokens, 'refresh_token'> {}
+
+export async function getGoogleOAuthTokens(code: string): Promise<OAuthTokens> {
   const url = 'https://oauth2.googleapis.com/token'
 
   const values = {
@@ -24,7 +24,7 @@ export async function getGoogleOAuthTokens(
   }
 
   try {
-    const response = await axios.post<GoogleTokens>(url, qs.stringify(values), {
+    const response = await axios.post<OAuthTokens>(url, qs.stringify(values), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -37,7 +37,9 @@ export async function getGoogleOAuthTokens(
   }
 }
 
-export async function refreshGoogleOAuthAccessToken(refreshToken: string) {
+export async function refreshGoogleOAuthAccessToken(
+  refreshToken: string
+): Promise<refreshedAccessToken> {
   const url = 'https://oauth2.googleapis.com/token'
 
   const values = {
@@ -48,7 +50,7 @@ export async function refreshGoogleOAuthAccessToken(refreshToken: string) {
   }
 
   try {
-    const response = await axios.post(url, null, {
+    const response = await axios.post<refreshedAccessToken>(url, null, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -57,6 +59,6 @@ export async function refreshGoogleOAuthAccessToken(refreshToken: string) {
     return response.data
   } catch (error: any) {
     console.error(error, 'Failed to refresh access token')
-    // throw new Error(error.message)
+    throw new Error(error.message)
   }
 }
