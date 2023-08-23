@@ -14,16 +14,16 @@ export async function handleGetVideos(req: Request, res: Response) {
   }
 
   const parsedCookies = parse(cookieHeader)
-  const accessToken = parsedCookies.access
+  const { access_token } = parsedCookies
 
-  if (!accessToken || typeof accessToken !== 'string') {
+  if (!access_token || typeof access_token !== 'string') {
     console.log('Access token cookie is missing or not a string.')
     res.redirect('/api/youtube/auth')
     return
   }
 
   try {
-    const videos = await fetchYoutubeVideos(accessToken)
+    const videos = await fetchYoutubeVideos(access_token)
     res.json({
       videos: videos,
     })
