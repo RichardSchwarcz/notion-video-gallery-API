@@ -5,21 +5,27 @@ import {
   handleRefreshAccessToken,
 } from './handlers/googleOAuthHandler'
 import { handleGetYoutubeVideos } from './handlers/youtubeVideosHandler'
-import axios from 'axios'
 import { parse } from 'cookie'
 import { handleGetNotionVideos } from './handlers/notionDatabaseHandler'
+import {
+  fetchYoutubeVideos,
+  fetchYoutubeVideosRecursively,
+} from './fetchYoutubeVideos'
+import { getYoutubePlaylistInfo } from './getYoutubePlaylistInfo'
 
 const router = Router()
 
 // cookies validation
 router.use(
-  '/youtube/videos',
+  ['/youtube/videos', '/notion'],
   (req: Request, res: Response, next: NextFunction) => {
     const cookieHeader = req.headers.cookie
 
     // check cookies header
     if (!cookieHeader || typeof cookieHeader !== 'string') {
-      console.log('Cookie header is missing or not a string.')
+      console.log(
+        'Cookie header is missing or not a string. Redirecting to auth from middleware'
+      )
       res.redirect('/api/youtube/auth')
       return
     }
@@ -29,14 +35,18 @@ router.use(
 
     // check access token
     if (!access_token || typeof access_token !== 'string') {
-      console.log('Access token is missing or not a string.')
+      console.log(
+        'Access token is missing or not a string. Redirecting to refresh from middleware'
+      )
       res.redirect('/api/youtube/auth/refresh')
       return
     }
 
     // check refresh token
     if (!refresh_token || typeof refresh_token !== 'string') {
-      console.log('Refresh token is missing or not a string.')
+      console.log(
+        'Refresh token is missing or not a string. Redirecting to auth from middleware'
+      )
       res.redirect('/api/youtube/auth')
       return
     }
@@ -50,13 +60,40 @@ router.get('/youtube/auth', handleOAuthURL)
 
 router.get('/youtube/auth/redirect', handleGetOAuthTokens)
 
+// ! add restricted middleware. no post request allowed without refresh token
 router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 
 // youtube videos
+// ! add restricted middleware. no post request allowed without access token
 router.get('/youtube/videos', handleGetYoutubeVideos)
 
 // notion database
 router.get('/notion/videos', handleGetNotionVideos)
+
+// load notion database
+router.get('/notion/load', async (req: Request, res: Response) => {
+  const cookieHeader = req.headers.cookie
+
+  if (!cookieHeader || typeof cookieHeader !== 'string') {
+    console.log('Cookie header is missing or not a string.')
+    return
+  }
+
+  const parsedCookies = parse(cookieHeader)
+  const { access_token } = parsedCookies
+
+  try {
+    const videos = await fetchYoutubeVideosRecursively(access_token, undefined)
+
+    res.json({ allVideos: videos })
+  } catch (error: any) {
+    const errorMessage = `${error.response.status} ${error.response.statusText}`
+
+    if (errorMessage == '401 Unauthorized') {
+      res.redirect('/api/error/unauthorized')
+    }
+  }
+})
 
 // error
 router.get('/error/unauthorized', (res: Response) => {

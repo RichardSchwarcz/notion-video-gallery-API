@@ -15,6 +15,7 @@ export async function handleGetYoutubeVideos(req: Request, res: Response) {
 
   try {
     const videos = await fetchYoutubeVideos(access_token)
+
     res.json({
       videos: videos,
     })
