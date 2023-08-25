@@ -22,7 +22,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
     const accessTokenCookie = serialize('access_token', tokens.access_token, {
       httpOnly: true,
       maxAge: tokens.expires_in - 200,
-      path: '/api/youtube',
+      path: '/api',
     })
 
     const refreshTokenCookie = serialize(
@@ -30,7 +30,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
       tokens.refresh_token,
       {
         httpOnly: true,
-        path: '/api/youtube',
+        path: '/api',
       }
     )
 
@@ -64,7 +64,7 @@ export async function handleRefreshAccessToken(req: Request, res: Response) {
     const accessTokenCookie = serialize('access_token', response.access_token, {
       httpOnly: true,
       maxAge: response.expires_in - 200,
-      path: '/api/youtube',
+      path: '/api',
     })
 
     res.setHeader('Set-Cookie', accessTokenCookie)
