@@ -3,10 +3,11 @@ import { CreatePageParameters } from '@notionhq/client/build/src/api-endpoints'
 
 const notion = new Client({ auth: process.env.NOTION_SECRET })
 
-interface videoSchema {
+export interface videoSchema {
   title: string
-  description: string
+  // description: string
   thumbnail: string
+  url: string
   videoOwnerChannelTitle: string
 }
 
@@ -33,15 +34,10 @@ export async function postToNotionDatabase(video: videoSchema) {
           },
         ],
       },
-    },
-    children: [
-      {
-        callout: {
-          rich_text: [{ text: { content: `${video.description}` } }],
-          color: 'blue',
-        },
+      URL: {
+        url: `${video.url}`,
       },
-    ],
+    },
   }
-  await notion.pages.create(parameters)
+  return await notion.pages.create(parameters)
 }
