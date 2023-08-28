@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { videoSchema } from './postNotionEntries'
 
 export async function fetchYoutubeVideos(accessToken: string) {
   const rootURL = 'https://www.googleapis.com/youtube/v3/playlistItems'
@@ -48,7 +49,7 @@ function generateQueryString(options: FetchPlaylistOptions) {
 export async function fetchYoutubeVideosRecursively(
   accessToken: string,
   nextPageToken: string | undefined,
-  allVideos: any[] = []
+  allVideos: videoSchema[] = []
 ) {
   const rootURL = 'https://www.googleapis.com/youtube/v3/playlistItems'
 
@@ -69,8 +70,18 @@ export async function fetchYoutubeVideosRecursively(
 
   try {
     const res = await axios.get(`${rootURL}?${qs.toString()}`, config)
-    const videos = res.data.items || []
-    allVideos.push(...videos)
+    const items = res.data.items || []
+
+    items.forEach((item: any) => {
+      const videoObject: videoSchema = {
+        title: item.snippet.title,
+        // description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails.high.url,
+        url: `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`,
+        videoOwnerChannelTitle: item.snippet.videoOwnerChannelTitle,
+      }
+      allVideos.push(videoObject)
+    })
 
     if (res.data.nextPageToken) {
       return fetchYoutubeVideosRecursively(
