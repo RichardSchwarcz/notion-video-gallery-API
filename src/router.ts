@@ -13,6 +13,7 @@ import {
 } from './fetchYoutubeVideos'
 import { getYoutubePlaylistInfo } from './getYoutubePlaylistInfo'
 import { postToNotionDatabase } from './postNotionEntries'
+import { postDelayedRequests } from './utils/postDelayedRequests'
 
 const router = Router()
 
@@ -88,17 +89,17 @@ router.get('/notion/load', async (req: Request, res: Response) => {
     const videos = await fetchYoutubeVideosRecursively(access_token, undefined)
 
     res.json({ allVideos: videos })
+
     // load notion database
-    const testVideo = {
-      title:
-        'T3 Stack Tutorial - FROM 0 TO PROD FOR $0 (Next.js, tRPC, TypeScript, Tailwind, Prisma & More)',
-      description:
-        "I've never worked this hard on a video before. I really hope y'all can benefit from this 🙏\n\nGITHUB REPO https://github.com/t3dotgg/chirp\nDEPLOYED APP https://xn--uo8h.t3.gg/\nGET A JACKET IF YOU'RE COOL LIKE THAT https://shop.t3.gg/\n\nALL MY VIDEOS ARE POSTED EARLY ON PATREON https://www.patreon.com/t3dotgg\nEverything else (Twitch, Twitter, Discord & my blog): https://t3.gg/links\n\nTHANK YOU TO THE T3 DEPLOY PARTNERS\n- Clerk https://clerk.com/?utm_campaign=theo-dtc\n- Planetscale https://planetscale.com/?ref=theo\n- Upstash https://upstash.com/?utm_source=theo_qstash\n- Vercel https://vercel.com/?ref=theo\n- Axiom https://www.axiom.co/?ref=theo\n\n\nTHANK YOU @zombiefacesupreme FOR THE TIMESTAMPS\n[0:00] Introduction & Install\n[3:45] Setting up Github, Vercel, & Planetscale\n[11:30] Setting up Clerk, CAT BREAK, & Axiom\n[21:15] From Prisma Schema to tRPC Procedure\n[30:30] Style skeleton\n[37:15] Creating posts & connecting them to users\n[48:15] The PostView component\n[59:30] Relative time with dayjs\n[1:04:00] Next/Image\n[1:08:00] Loading spinner & handling loading states\n[1:19:15] tRPC Context, auth state, and private procedures\n[1:27:00] Zod, useMutation, sorting the feed, and onSuccess\n[1:38:00] Rate limiting with Upstash\n[1:43:45] Error handling with Zod & react-hot-toast\n[1:52:30] Routing -- Profile View & Post View\n[1:57:30] Creating profileRouter \n[2:06:00] Using tRPC's createProxySSGHelpers\n[2:14:45] The Layout\n[2:19:15] The Profile Page\n[2:28:00] The Profile Feed\n[2:38:45] The Post Page\n[2:47:15] Github CI\n[2:52:45] Domain Name Redirect\n[2:55:15] Conclusion",
-      thumbnail: 'https://i.ytimg.com/vi/YkOSUVzOAA4/hqdefault.jpg',
-      videoOwnerChannelTitle: 'Theo - t3․gg',
+    console.log('Starting API requests...')
+    try {
+      const post = await postDelayedRequests(videos, postToNotionDatabase, 350)
+      console.log('API requests completed:', post)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      console.log('All operations completed.')
     }
-    const post = await postToNotionDatabase(testVideo)
-    console.log(post)
   } catch (error: any) {
     const errorMessage = `${error.response.status} ${error.response.statusText}`
 
