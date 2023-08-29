@@ -6,7 +6,10 @@ import {
 } from './handlers/googleOAuthHandler'
 import { handleGetYoutubeVideos } from './handlers/youtubeVideosHandler'
 import { parse } from 'cookie'
-import { handleGetNotionVideos } from './handlers/notionDatabaseHandler'
+import {
+  handleGetNotionVideos,
+  handleInitialLoad,
+} from './handlers/notionDatabaseHandler'
 import {
   fetchYoutubeVideos,
   fetchYoutubeVideosRecursively,
@@ -73,41 +76,7 @@ router.get('/youtube/videos', handleGetYoutubeVideos)
 router.get('/notion/videos', handleGetNotionVideos)
 
 // load notion database
-router.get('/notion/load', async (req: Request, res: Response) => {
-  const cookieHeader = req.headers.cookie
-
-  if (!cookieHeader || typeof cookieHeader !== 'string') {
-    console.log('Cookie header is missing or not a string.')
-    return
-  }
-
-  const parsedCookies = parse(cookieHeader)
-  const { access_token } = parsedCookies
-
-  try {
-    // fetch all videos
-    const videos = await fetchYoutubeVideosRecursively(access_token, undefined)
-
-    res.json({ allVideos: videos })
-
-    // load notion database
-    console.log('Starting API requests...')
-    try {
-      const post = await postDelayedRequests(videos, postToNotionDatabase, 350)
-      console.log('API requests completed:', post)
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      console.log('All operations completed.')
-    }
-  } catch (error: any) {
-    const errorMessage = `${error.response.status} ${error.response.statusText}`
-
-    if (errorMessage == '401 Unauthorized') {
-      res.redirect('/api/error/unauthorized')
-    }
-  }
-})
+router.get('/notion/load', handleInitialLoad)
 
 // error
 router.get('/error/unauthorized', (res: Response) => {
