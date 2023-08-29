@@ -1,17 +1,22 @@
 import { Client } from '@notionhq/client'
-import { CreatePageParameters } from '@notionhq/client/build/src/api-endpoints'
+import {
+  CreatePageParameters,
+  CreatePageResponse,
+} from '@notionhq/client/build/src/api-endpoints'
 
 const notion = new Client({ auth: process.env.NOTION_SECRET })
 
 export interface videoSchema {
   title: string
-  // description: string
   thumbnail: string
   url: string
   videoOwnerChannelTitle: string
+  duration: string
 }
 
-export async function postToNotionDatabase(video: videoSchema) {
+export async function postToNotionDatabase(
+  video: videoSchema
+): Promise<CreatePageResponse> {
   const parameters: CreatePageParameters = {
     parent: {
       type: 'database_id',
@@ -36,6 +41,16 @@ export async function postToNotionDatabase(video: videoSchema) {
       },
       URL: {
         url: `${video.url}`,
+      },
+      Duration: {
+        rich_text: [
+          {
+            type: 'text',
+            text: {
+              content: `${video.duration}`,
+            },
+          },
+        ],
       },
     },
   }
