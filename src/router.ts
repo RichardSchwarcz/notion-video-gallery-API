@@ -10,6 +10,7 @@ import {
   handleGetNotionVideos,
   handleInitialLoad,
 } from './handlers/notionDatabaseHandler'
+import { sync } from './handlers/sync'
 
 const router = Router()
 
@@ -70,6 +71,9 @@ router.get('/notion/videos', handleGetNotionVideos)
 
 // load notion database
 router.get('/notion/load', handleInitialLoad)
+
+// sync
+router.get('/sync', sync)
 
 // error
 router.get('/error/unauthorized', (res: Response) => {
