@@ -3,7 +3,17 @@ import { parse } from 'cookie'
 import { Request, Response } from 'express'
 import { fetchYoutubeVideosRecursively } from '../fetchYoutubeVideos'
 import { postDelayedRequests } from '../utils/postDelayedRequests'
-import { postToNotionDatabase } from '../postNotionEntries'
+import { postToNotionDatabase } from '../postToNotionDatabase'
+import { getVideosIds, getYoutubeVideosDuration } from '../utils/youtubeHelpers'
+import { formatYoutubeVideos } from '../utils/youtubeHelpers'
+import {
+  FetchVideosOptions,
+  VideoDuration,
+  VideoInfo,
+  VideoSchema,
+} from '../types/videoTypes'
+
+// ------------- HANDLERS ----------------
 
 export async function handleGetNotionVideos(req: Request, res: Response) {
   const url = `https://api.notion.com/v1/databases/${process.env.NOTION_DATABASE_ID}/query`
@@ -29,6 +39,8 @@ export async function handleGetNotionVideos(req: Request, res: Response) {
   }
 }
 
+// ---------------------------------------------
+
 export async function handleInitialLoad(req: Request, res: Response) {
   const cookieHeader = req.headers.cookie
 
@@ -41,15 +53,48 @@ export async function handleInitialLoad(req: Request, res: Response) {
   const { access_token } = parsedCookies
 
   try {
-    // fetch all videos
-    const videos = await fetchYoutubeVideosRecursively(access_token, undefined)
+    // fetch all videos from playlist
+    const videosOptions: FetchVideosOptions = {
+      part: 'snippet',
+      maxResults: '50',
+      playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
+    }
 
-    res.json({ allVideos: videos })
+    const rawPlaylistItems = await fetchYoutubeVideosRecursively(
+      access_token,
+      'playlistItems',
+      videosOptions
+    )
+
+    const formattedVideos = formatYoutubeVideos(rawPlaylistItems)
+
+    // fetch videos by ID. In playlist items there is no duration property
+    const videosDataOptions: FetchVideosOptions = {
+      part: 'contentDetails',
+      maxResults: '50',
+      id: getVideosIds(formattedVideos),
+    }
+
+    const rawVideosData = await fetchYoutubeVideosRecursively(
+      access_token,
+      'videos',
+      videosDataOptions
+    )
+
+    const durations = getYoutubeVideosDuration(rawVideosData)
+
+    const finalVideos = combineVideoArrays(formattedVideos, durations)
+
+    res.json({ allVideos: finalVideos })
 
     // load notion database
     console.log('Starting API requests...')
     try {
-      const post = await postDelayedRequests(videos, postToNotionDatabase, 350)
+      const post = await postDelayedRequests(
+        finalVideos,
+        postToNotionDatabase,
+        350
+      )
       console.log('API requests completed:', post)
     } catch (error) {
       console.error('Error:', error)
@@ -63,4 +108,28 @@ export async function handleInitialLoad(req: Request, res: Response) {
       res.redirect('/api/error/unauthorized')
     }
   }
+}
+
+// ---------------------------------------------
+
+function combineVideoArrays(
+  videoInfoArray: VideoInfo[],
+  durationArray: VideoDuration[]
+): VideoSchema[] {
+  const combinedArray = []
+
+  for (const videoInfo of videoInfoArray) {
+    const matchingDuration = durationArray.find(
+      (duration: VideoDuration) => duration.id === videoInfo.videoId
+    )
+
+    if (matchingDuration) {
+      combinedArray.push({
+        ...videoInfo,
+        duration: matchingDuration.duration,
+      })
+    }
+  }
+
+  return combinedArray
 }
