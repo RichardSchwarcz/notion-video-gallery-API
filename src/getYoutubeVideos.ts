@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { FetchVideosOptions } from './types/videoTypes'
+import { GetVideosOptions } from './types/videoTypes'
 
 const ENDPOINT = {
   playlistItems: 'playlistItems',
@@ -10,7 +10,7 @@ type Endpoint = keyof typeof ENDPOINT
 
 // ------------- FUNCTIONS ----------------
 
-export async function fetchYoutubeVideos(
+export async function getYoutubeVideos(
   accessToken: string,
   endpoint: Endpoint,
   qs: URLSearchParams
@@ -30,7 +30,7 @@ export async function fetchYoutubeVideos(
 // ------------------------------------------
 
 export function generateQueryString(
-  options: FetchVideosOptions
+  options: GetVideosOptions
 ): URLSearchParams {
   const commonOptions = {
     part: options.part,
@@ -69,10 +69,10 @@ export function generateQueryString(
 
 // --------------------------------------------
 
-export async function fetchYoutubeVideosRecursively(
+export async function getYoutubeVideosRecursively(
   accessToken: string,
   endpoint: Endpoint,
-  options: FetchVideosOptions,
+  options: GetVideosOptions,
   nextPageToken: string | undefined = undefined,
   allVideos: any[] = []
 ) {
@@ -84,7 +84,7 @@ export async function fetchYoutubeVideosRecursively(
   try {
     const qs = generateQueryString(options_)
 
-    const data = await fetchYoutubeVideos(accessToken, endpoint, qs)
+    const data = await getYoutubeVideos(accessToken, endpoint, qs)
     const items = data.items || []
 
     items.forEach((item: any) => {
@@ -92,7 +92,7 @@ export async function fetchYoutubeVideosRecursively(
     })
 
     if (data.nextPageToken) {
-      return fetchYoutubeVideosRecursively(
+      return getYoutubeVideosRecursively(
         accessToken,
         endpoint,
         options_,

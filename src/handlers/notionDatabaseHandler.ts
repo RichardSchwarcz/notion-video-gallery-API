@@ -1,13 +1,16 @@
 import axios from 'axios'
 import { parse } from 'cookie'
 import { Request, Response } from 'express'
-import { fetchYoutubeVideosRecursively } from '../fetchYoutubeVideos'
+import { getYoutubeVideosRecursively } from '../getYoutubeVideos'
 import { postDelayedRequests } from '../utils/postDelayedRequests'
-import { postToNotionDatabase } from '../postToNotionDatabase'
+import {
+  postToNotionDatabase,
+  postToNotionSnapshot,
+} from '../postToNotionDatabase'
 import { getVideosIds, getYoutubeVideosDuration } from '../utils/youtubeHelpers'
 import { formatYoutubeVideos } from '../utils/youtubeHelpers'
 import {
-  FetchVideosOptions,
+  GetVideosOptions,
   VideoDuration,
   VideoInfo,
   VideoSchema,
@@ -54,13 +57,13 @@ export async function handleInitialLoad(req: Request, res: Response) {
 
   try {
     // fetch all videos from playlist
-    const videosOptions: FetchVideosOptions = {
+    const videosOptions: GetVideosOptions = {
       part: 'snippet',
       maxResults: '50',
       playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
     }
 
-    const rawPlaylistItems = await fetchYoutubeVideosRecursively(
+    const rawPlaylistItems = await getYoutubeVideosRecursively(
       access_token,
       'playlistItems',
       videosOptions
@@ -68,14 +71,15 @@ export async function handleInitialLoad(req: Request, res: Response) {
 
     const formattedVideos = formatYoutubeVideos(rawPlaylistItems)
 
+    const videoIds = getVideosIds(formattedVideos)
     // fetch videos by ID. In playlist items there is no duration property
-    const videosDataOptions: FetchVideosOptions = {
+    const videosDataOptions: GetVideosOptions = {
       part: 'contentDetails',
       maxResults: '50',
-      id: getVideosIds(formattedVideos),
+      id: videoIds,
     }
 
-    const rawVideosData = await fetchYoutubeVideosRecursively(
+    const rawVideosData = await getYoutubeVideosRecursively(
       access_token,
       'videos',
       videosDataOptions
@@ -85,14 +89,35 @@ export async function handleInitialLoad(req: Request, res: Response) {
 
     const finalVideos = combineVideoArrays(formattedVideos, durations)
 
-    res.json({ allVideos: finalVideos })
+    const wrapIds = (videoIds: string[]) => {
+      return videoIds.map((id) => {
+        return { id }
+      })
+    }
 
-    // load notion database
+    res.json({ allVideos: wrapIds(videoIds) })
+
+    // // load notion database
+    // console.log('Starting API requests...')
+    // try {
+    //   const post = await postDelayedRequests(
+    //     finalVideos,
+    //     postToNotionDatabase,
+    //     350
+    //   )
+    //   console.log('API requests completed:', post)
+    // } catch (error) {
+    //   console.error('Error:', error)
+    // } finally {
+    //   console.log('All operations completed.')
+    // }
+
+    // create notion snapshot
     console.log('Starting API requests...')
     try {
       const post = await postDelayedRequests(
-        finalVideos,
-        postToNotionDatabase,
+        wrapIds(videoIds),
+        postToNotionSnapshot,
         350
       )
       console.log('API requests completed:', post)

@@ -14,7 +14,7 @@ const PART = {
 
 type Part = keyof typeof PART
 
-export type FetchVideosOptions = {
+export type GetVideosOptions = {
   part: Part
   maxResults: string
   id?: string[]
