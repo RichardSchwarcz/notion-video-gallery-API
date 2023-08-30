@@ -10,7 +10,6 @@ import {
   handleGetNotionVideos,
   handleInitialLoad,
 } from './handlers/notionDatabaseHandler'
-import { fetchYoutubeVideosRecursively } from './fetchYoutubeVideos'
 
 const router = Router()
 
@@ -65,27 +64,6 @@ router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 // youtube videos
 // ! add restricted middleware. no post request allowed without access token
 router.get('/youtube/videos', handleGetYoutubeVideos)
-
-// router.get('/youtube/durations', async (req: Request, res: Response) => {
-//   const cookieHeader = req.headers.cookie
-
-//   if (!cookieHeader || typeof cookieHeader !== 'string') {
-//     console.log('Cookie header is missing or not a string.')
-//     return
-//   }
-
-//   const parsedCookies = parse(cookieHeader)
-//   const { access_token } = parsedCookies
-
-//   try {
-//     // fetch duration of videos
-//     const videos = await fetchYoutubeVideosRecursively(access_token, undefined)
-
-//     res.json({ allVideos: videos })
-//   } catch (error) {
-//     console.log(error)
-//   }
-// })
 
 // notion database
 router.get('/notion/videos', handleGetNotionVideos)
