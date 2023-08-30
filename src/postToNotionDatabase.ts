@@ -51,3 +51,23 @@ export async function postToNotionDatabase(
   }
   return await notion.pages.create(parameters)
 }
+export async function postToNotionSnapshot(video: {
+  title: string
+  url: string
+}): Promise<CreatePageResponse> {
+  const parameters: CreatePageParameters = {
+    parent: {
+      type: 'database_id',
+      database_id: process.env.NOTION_SNAPSHOT_ID as string,
+    },
+    properties: {
+      Name: {
+        title: [{ text: { content: `${video.title}` as string } }],
+      },
+      URL: {
+        url: `${video.url}`,
+      },
+    },
+  }
+  return await notion.pages.create(parameters)
+}
