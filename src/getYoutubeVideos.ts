@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { GetVideosOptions } from './types/videoTypes'
+import { VideosOptions } from './types/videoTypes'
 
 const ENDPOINT = {
   playlistItems: 'playlistItems',
@@ -29,9 +29,7 @@ export async function getYoutubeVideos(
 
 // ------------------------------------------
 
-export function generateQueryString(
-  options: GetVideosOptions
-): URLSearchParams {
+export function generateQueryString(options: VideosOptions): URLSearchParams {
   const commonOptions = {
     part: options.part,
     maxResults: options.maxResults,
@@ -72,7 +70,7 @@ export function generateQueryString(
 export async function getYoutubeVideosRecursively(
   accessToken: string,
   endpoint: Endpoint,
-  options: GetVideosOptions,
+  options: VideosOptions,
   nextPageToken: string | undefined = undefined,
   allVideos: any[] = []
 ) {

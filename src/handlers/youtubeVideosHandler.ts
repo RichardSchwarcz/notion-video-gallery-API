@@ -1,7 +1,7 @@
 import { parse } from 'cookie'
 import { Request, Response } from 'express'
 import { getYoutubeVideos, generateQueryString } from '../getYoutubeVideos'
-import { GetVideosOptions } from '../types/videoTypes'
+import { VideosOptions } from '../types/videoTypes'
 
 // ------------- FUNCTIONS ----------------
 
@@ -17,7 +17,7 @@ export async function handleGetYoutubeVideos(req: Request, res: Response) {
   const { access_token } = parsedCookies
 
   try {
-    const options: GetVideosOptions = {
+    const options: VideosOptions = {
       part: 'snippet',
       maxResults: '50',
       playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
@@ -25,10 +25,14 @@ export async function handleGetYoutubeVideos(req: Request, res: Response) {
 
     const qs = generateQueryString(options)
 
-    const videos = await getYoutubeVideos(access_token, 'playlistItems', qs)
+    const playlistItems = await getYoutubeVideos(
+      access_token,
+      'playlistItems',
+      qs
+    )
 
     res.json({
-      videos: videos,
+      videos: playlistItems,
     })
   } catch (error: any) {
     console.log(error.message)

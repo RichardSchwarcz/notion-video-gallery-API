@@ -1,6 +1,6 @@
-import { formatYoutubeVideos, getYoutubeVideosDuration } from './youtubeHelpers'
+import { formatPlaylistItems, getYoutubeVideosDuration } from './youtubeHelpers'
 
-describe('formatYoutubeVideos', () => {
+describe('formatPlaylistItems', () => {
   it('should format video array correctly', () => {
     const videoArray = [
       {
@@ -118,7 +118,7 @@ describe('formatYoutubeVideos', () => {
       },
     ]
 
-    const formattedArray = formatYoutubeVideos(videoArray)
+    const formattedArray = formatPlaylistItems(videoArray)
     expect(formattedArray).toEqual(expectedArray)
   })
 })

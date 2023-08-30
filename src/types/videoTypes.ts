@@ -14,7 +14,7 @@ const PART = {
 
 type Part = keyof typeof PART
 
-export type GetVideosOptions = {
+export type VideosOptions = {
   part: Part
   maxResults: string
   id?: string[]
@@ -22,7 +22,7 @@ export type GetVideosOptions = {
   pageToken?: string
 }
 
-export interface VideoInfo extends Omit<VideoSchema, 'duration'> {}
+export interface PlaylistItem extends Omit<VideoSchema, 'duration'> {}
 
 export interface VideoDuration {
   id: string

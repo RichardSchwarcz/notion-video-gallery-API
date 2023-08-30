@@ -1,6 +1,6 @@
-import { VideoDuration, VideoInfo } from '../types/videoTypes'
+import { VideoDuration, PlaylistItem } from '../types/videoTypes'
 
-export function formatYoutubeVideos(videoArray: any): VideoInfo[] {
+export function formatPlaylistItems(videoArray: any): PlaylistItem[] {
   return videoArray.map((video: any) => {
     const videoId = video.snippet.resourceId.videoId
     const title = video.snippet.title
@@ -48,8 +48,8 @@ export function getYoutubeVideosDuration(videoArray: any): VideoDuration[] {
   })
 }
 
-export const getVideosIds = (formattedVideos: VideoInfo[]): string[] => {
-  return formattedVideos.map((video: VideoInfo) => {
+export const getVideosIds = (formattedVideos: PlaylistItem[]): string[] => {
+  return formattedVideos.map((video: PlaylistItem) => {
     return video.videoId
   })
 }
