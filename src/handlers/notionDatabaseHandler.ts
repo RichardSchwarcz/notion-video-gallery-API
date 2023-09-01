@@ -14,6 +14,8 @@ import {
   VideoDuration,
   PlaylistItem,
   VideoSchema,
+  RawPlaylistItem,
+  RawVideoData,
 } from '../types/videoTypes'
 
 // ------------- HANDLERS ----------------
@@ -56,51 +58,62 @@ export async function handleInitialLoad(req: Request, res: Response) {
   const { access_token } = parsedCookies
 
   try {
-    // fetch all videos from playlist
-    const videosOptions: VideosOptions = {
-      part: 'snippet',
-      maxResults: '50',
-      playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
+    const getNotionData = async () => {
+      // fetch all videos from playlist
+      const videosOptions: VideosOptions = {
+        part: 'snippet',
+        maxResults: '50',
+        playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
+      }
+
+      const rawPlaylistItems: RawPlaylistItem[] =
+        await getYoutubeVideosRecursively(
+          access_token,
+          'playlistItems',
+          videosOptions
+        )
+
+      const formattedVideos: PlaylistItem[] =
+        formatPlaylistItems(rawPlaylistItems)
+
+      // fetch videos by ID. In playlist items there is no duration property
+      const videosDataOptions: VideosOptions = {
+        part: 'contentDetails',
+        maxResults: '50',
+        id: getVideosIds(formattedVideos),
+      }
+
+      const rawVideosData: RawVideoData[] = await getYoutubeVideosRecursively(
+        access_token,
+        'videos',
+        videosDataOptions
+      )
+
+      const durations: VideoDuration[] = getYoutubeVideosDuration(rawVideosData)
+
+      return {
+        formattedVideos,
+        durations,
+        rawPlaylistItems,
+        rawVideosData,
+      }
     }
 
-    const rawPlaylistItems = await getYoutubeVideosRecursively(
-      access_token,
-      'playlistItems',
-      videosOptions
-    )
+    res.json({ allVideos: 'formatSnapshotData(rawPlaylistItems)' })
 
-    const formattedVideos = formatPlaylistItems(rawPlaylistItems)
+    //------------------------------------------------------------
 
-    // fetch videos by ID. In playlist items there is no duration property
-    const videosDataOptions: VideosOptions = {
-      part: 'contentDetails',
-      maxResults: '50',
-      id: getVideosIds(formattedVideos),
-    }
+    const { rawPlaylistItems, formattedVideos, durations } =
+      await getNotionData()
 
-    const rawVideosData = await getYoutubeVideosRecursively(
-      access_token,
-      'videos',
-      videosDataOptions
-    )
-
-    const durations = getYoutubeVideosDuration(rawVideosData)
-
-    const finalVideos = combineVideoArrays(formattedVideos, durations)
-
-    const getData = (formattedVideos: PlaylistItem[]) => {
-      return formattedVideos.map((video: PlaylistItem) => {
-        return { title: video.title, url: video.url }
-      })
-    }
-
-    res.json({ allVideos: finalVideos })
+    const notionSnapshotData = formatSnapshotData(rawPlaylistItems)
+    const notionMainData = combineVideoArrays(formattedVideos, durations)
 
     // load notion database
     console.log('Starting API requests...')
     try {
       const post = await postDelayedRequests(
-        finalVideos,
+        notionMainData,
         postToNotionDatabase,
         350
       )
@@ -115,7 +128,7 @@ export async function handleInitialLoad(req: Request, res: Response) {
     console.log('Starting API requests...')
     try {
       const post = await postDelayedRequests(
-        getData(formattedVideos),
+        notionSnapshotData,
         postToNotionSnapshot,
         350
       )
@@ -137,13 +150,13 @@ export async function handleInitialLoad(req: Request, res: Response) {
 // ---------------------------------------------
 
 function combineVideoArrays(
-  videoInfoArray: PlaylistItem[],
-  durationArray: VideoDuration[]
+  formattedVideos: PlaylistItem[],
+  durations: VideoDuration[]
 ): VideoSchema[] {
   const combinedArray = []
 
-  for (const videoInfo of videoInfoArray) {
-    const matchingDuration = durationArray.find(
+  for (const videoInfo of formattedVideos) {
+    const matchingDuration = durations.find(
       (duration: VideoDuration) => duration.id === videoInfo.videoId
     )
 
@@ -156,4 +169,14 @@ function combineVideoArrays(
   }
 
   return combinedArray
+}
+
+function formatSnapshotData(rawPlaylistItems: RawPlaylistItem[]) {
+  return rawPlaylistItems.map((playlistItem: RawPlaylistItem) => {
+    return {
+      title: playlistItem.snippet.title,
+      url: `https://www.youtube.com/watch?v=${playlistItem.snippet.resourceId.videoId}`,
+      playlistItemId: playlistItem.id,
+    }
+  })
 }
