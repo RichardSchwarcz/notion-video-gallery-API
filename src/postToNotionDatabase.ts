@@ -38,14 +38,7 @@ export async function postToNotionDatabase(
         url: `${video.url}`,
       },
       Duration: {
-        rich_text: [
-          {
-            type: 'text',
-            text: {
-              content: `${video.duration}`,
-            },
-          },
-        ],
+        rich_text: [{ type: 'text', text: { content: `${video.duration}` } }],
       },
     },
   }
@@ -54,6 +47,7 @@ export async function postToNotionDatabase(
 export async function postToNotionSnapshot(video: {
   title: string
   url: string
+  playlistItemId: string
 }): Promise<CreatePageResponse> {
   const parameters: CreatePageParameters = {
     parent: {
@@ -62,10 +56,15 @@ export async function postToNotionSnapshot(video: {
     },
     properties: {
       Name: {
-        title: [{ text: { content: `${video.title}` as string } }],
+        title: [{ text: { content: `${video.title}` } }],
       },
       URL: {
         url: `${video.url}`,
+      },
+      PlaylistItemID: {
+        rich_text: [
+          { type: 'text', text: { content: `${video.playlistItemId}` } },
+        ],
       },
     },
   }
