@@ -26,6 +26,21 @@ export async function getYoutubeVideos(
 
   return res.data
 }
+export async function deleteYoutubePlaylistItem(
+  accessToken: string,
+  qs: URLSearchParams
+) {
+  const rootURL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }
+  const res = await axios.delete(`${rootURL}?${qs.toString()}`, config)
+
+  return res
+}
 
 // ------------------------------------------
 
