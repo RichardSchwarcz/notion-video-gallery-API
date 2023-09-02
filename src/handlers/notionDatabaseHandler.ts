@@ -149,7 +149,7 @@ export async function handleInitialLoad(req: Request, res: Response) {
 
 // ---------------------------------------------
 
-function combineVideoArrays(
+export function combineVideoArrays(
   formattedVideos: PlaylistItem[],
   durations: VideoDuration[]
 ): VideoSchema[] {
@@ -171,7 +171,7 @@ function combineVideoArrays(
   return combinedArray
 }
 
-function formatSnapshotData(rawPlaylistItems: RawPlaylistItem[]) {
+export function formatSnapshotData(rawPlaylistItems: RawPlaylistItem[]) {
   return rawPlaylistItems.map((playlistItem: RawPlaylistItem) => {
     return {
       title: playlistItem.snippet.title,
