@@ -76,7 +76,7 @@ router.get('/notion/load', handleInitialLoad)
 router.get('/sync', sync)
 
 // error
-router.get('/error/unauthorized', (res: Response) => {
+router.get('/error/unauthorized', (req: Request, res: Response) => {
   res.send(
     `
   <div>
