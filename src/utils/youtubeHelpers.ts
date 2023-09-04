@@ -1,6 +1,6 @@
 import { VideoDuration, PlaylistItem } from '../types/videoTypes'
 
-export function formatPlaylistItems(videoArray: any): PlaylistItem[] {
+export function formatPlaylistItems(videoArray: any): PlaylistItem[] | [] {
   return videoArray.map((video: any) => {
     const videoId = video.snippet.resourceId.videoId
     const title = video.snippet.title
