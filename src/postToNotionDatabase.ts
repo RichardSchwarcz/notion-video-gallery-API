@@ -70,3 +70,10 @@ export async function postToNotionSnapshot(video: {
   }
   return await notion.pages.create(parameters)
 }
+
+export async function archiveNotionPage(pageId: string) {
+  return notion.pages.update({
+    page_id: pageId,
+    archived: true,
+  })
+}
