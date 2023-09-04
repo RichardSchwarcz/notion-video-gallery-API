@@ -1,10 +1,15 @@
-export function getNotionDataIDs(notionData: any): string[] {
+export function getNotionDataIDs(notionData: any): NotionDataIDs[] {
   return notionData.results.map((video: any) => {
+    const notionPageID = video.id
     const url = video.properties.URL.url
     const regex = /(?:v=|\/)([a-zA-Z0-9_-]{11})/
     const match = url.match(regex)
-    if (match) {
-      return match[1]
-    }
+    const youtubeVideoID = match[1]
+    return { notionPageID, youtubeVideoID }
   })
+}
+
+export type NotionDataIDs = {
+  notionPageID: string
+  youtubeVideoID: string
 }
