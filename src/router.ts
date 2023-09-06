@@ -10,7 +10,8 @@ import {
   handleGetNotionVideos,
   handleInitialLoad,
 } from './handlers/notionDatabaseHandler'
-import { sync } from './handlers/sync'
+import { InvalidPage, sync } from './handlers/sync'
+import { getNotionDatabaseItems } from './getNotionVideos'
 
 const router = Router()
 
@@ -53,6 +54,36 @@ router.use(
     next()
   }
 )
+
+router.use('/sync', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const database_id = process.env.NOTION_DATABASE_ID as string
+    const notionMainData = await getNotionDatabaseItems(database_id)
+
+    const invalidPages: InvalidPage[] = []
+    notionMainData.results.map((page: any) => {
+      if (!page.properties.URL.url) {
+        const pageTitle = page.properties.Name.title[0].plain_text
+        const pageURL = page.url
+        const pageID = page.id
+
+        invalidPages.push({
+          pageTitle,
+          pageURL,
+          pageID,
+        })
+      }
+    })
+
+    if (invalidPages.length > 0) {
+      req.invalidPages = invalidPages
+    }
+
+    next()
+  } catch (error) {
+    next(error)
+  }
+})
 
 // auth
 router.get('/youtube/auth', handleOAuthURL)
