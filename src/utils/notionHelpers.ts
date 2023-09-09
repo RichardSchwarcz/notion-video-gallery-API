@@ -11,5 +11,5 @@ export function getNotionDataIDs(notionData: any): NotionDataIDs[] {
 
 export type NotionDataIDs = {
   notionPageID: string
-  youtubeVideoID: string
+  youtubeVideoID?: string
 }
