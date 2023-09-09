@@ -10,7 +10,7 @@ import {
   handleGetNotionVideos,
   handleInitialLoad,
 } from './handlers/notionDatabaseHandler'
-import { InvalidPage, sync } from './handlers/sync'
+import { sync } from './handlers/sync'
 import { getNotionDatabaseItems } from './getNotionVideos'
 
 const router = Router()
@@ -55,19 +55,38 @@ router.use(
   }
 )
 
-router.use('/sync', async (req: Request, res: Response, next: NextFunction) => {
+type InvalidPage = {
+  pageTitle: string
+  pageURL: string
+  pageID: string
+}
+
+type InvalidPages = {
+  invalidPagesInMain: InvalidPage[]
+  invalidPagesInSnapshot: InvalidPage[]
+}
+
+const getInvalidPages = async () => {
   try {
     const database_id = process.env.NOTION_DATABASE_ID as string
     const notionMainData = await getNotionDatabaseItems(database_id)
 
-    const invalidPages: InvalidPage[] = []
+    const snapshot_id = process.env.NOTION_SNAPSHOT_ID as string
+    const notionSnapshotData = await getNotionDatabaseItems(snapshot_id)
+
+    const invalidPages: InvalidPages = {
+      invalidPagesInMain: [],
+      invalidPagesInSnapshot: [],
+    }
+
+    // random page in main DB without valid URL
     notionMainData.results.map((page: any) => {
       if (!page.properties.URL.url) {
-        const pageTitle = page.properties.Name.title[0].plain_text
-        const pageURL = page.url
-        const pageID = page.id
+        const pageTitle = page.properties.Name.title[0].plain_text as string
+        const pageURL = page.url as string
+        const pageID = page.id as string
 
-        invalidPages.push({
+        invalidPages.invalidPagesInMain.push({
           pageTitle,
           pageURL,
           pageID,
@@ -75,15 +94,29 @@ router.use('/sync', async (req: Request, res: Response, next: NextFunction) => {
       }
     })
 
-    if (invalidPages.length > 0) {
-      req.invalidPages = invalidPages
-    }
+    // random page in snapshot DB without valid URL
+    notionSnapshotData.results.map((page: any) => {
+      if (
+        !page.properties.URL.url ||
+        !page.properties.PlaylistItemID.rich_text[0].text.content
+      ) {
+        const pageTitle = page.properties.Name.title[0].plain_text as string
+        const pageURL = page.url as string
+        const pageID = page.id as string
 
-    next()
+        invalidPages.invalidPagesInSnapshot.push({
+          pageTitle,
+          pageURL,
+          pageID,
+        })
+      }
+    })
+
+    return invalidPages
   } catch (error) {
-    next(error)
+    console.log(error)
   }
-})
+}
 
 // auth
 router.get('/youtube/auth', handleOAuthURL)
@@ -103,8 +136,23 @@ router.get('/notion/videos', handleGetNotionVideos)
 // load notion database
 router.get('/notion/load', handleInitialLoad)
 
-// sync
-router.get('/sync', sync)
+router.get('/sync', async (req, res) => {
+  const invalidPages = await getInvalidPages()
+  if (invalidPages) {
+    const { invalidPagesInMain, invalidPagesInSnapshot } = invalidPages
+    if (invalidPagesInMain.length > 0 || invalidPagesInSnapshot.length > 0) {
+      res.redirect('/api/sync/invalid-pages')
+    } else {
+      return sync(req, res)
+    }
+  }
+})
+
+router.get('/sync/invalid-pages', async (req, res) => {
+  const pages = await getInvalidPages()
+
+  res.json({ pages })
+})
 
 // error
 router.get('/error/unauthorized', (req: Request, res: Response) => {
