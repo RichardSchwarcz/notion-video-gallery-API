@@ -24,18 +24,38 @@ export function findPlaylistItemsIDsInSnapshotToDelete(
 export function findDeletedVideos(
   mainData: NotionDataIDs[],
   snapshotData: NotionDataIDs[]
-): NotionDataIDs[] {
-  const difference: NotionDataIDs[] = []
+) {
+  const difference: DifferenceObject = {
+    deletedFromMain: [],
+    deletedFromSnapshot: [],
+  }
 
   const mainDBvideosID = mainData.map((mainItem) => {
     return mainItem.youtubeVideoID
   })
 
+  const snapshotDBvideosID = snapshotData.map((snapshotItem) => {
+    return snapshotItem.youtubeVideoID
+  })
+
+  // video deleted from main DB but still in snapshot
   snapshotData.forEach((snapshotItem) => {
     if (!mainDBvideosID.includes(snapshotItem.youtubeVideoID)) {
-      difference.push(snapshotItem)
+      difference.deletedFromMain.push(snapshotItem)
+    }
+  })
+
+  // video deleted from snapshot but still in main DB
+  mainData.forEach((mainItem) => {
+    if (!snapshotDBvideosID.includes(mainItem.youtubeVideoID)) {
+      difference.deletedFromSnapshot.push(mainItem)
     }
   })
 
   return difference
+}
+
+export type DifferenceObject = {
+  deletedFromMain: NotionDataIDs[]
+  deletedFromSnapshot: NotionDataIDs[]
 }
