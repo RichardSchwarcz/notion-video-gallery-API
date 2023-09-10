@@ -81,34 +81,47 @@ const getInvalidPages = async () => {
 
     // random page in main DB without valid URL
     notionMainData.results.map((page: any) => {
-      if (!page.properties.URL.url) {
-        const pageTitle = page.properties.Name.title[0].plain_text as string
-        const pageURL = page.url as string
-        const pageID = page.id as string
+      const invalidPageProperties = {
+        pageTitle: '',
+        pageURL: '',
+        pageID: '',
+      }
 
-        invalidPages.invalidPagesInMain.push({
-          pageTitle,
-          pageURL,
-          pageID,
-        })
+      if (!page.properties.URL.url) {
+        invalidPageProperties.pageURL = page.url as string
+        invalidPageProperties.pageID = page.id as string
+        const pageTitle = page.properties.Name.title[0]
+
+        if (pageTitle) {
+          Object.assign(invalidPageProperties, {
+            pageTitle: pageTitle.plain_text,
+          })
+        }
+        invalidPages.invalidPagesInMain.push(invalidPageProperties)
       }
     })
 
     // random page in snapshot DB without valid URL
     notionSnapshotData.results.map((page: any) => {
+      const invalidPageProperties = {
+        pageTitle: '',
+        pageURL: '',
+        pageID: '',
+      }
       if (
         !page.properties.URL.url ||
         !page.properties.PlaylistItemID.rich_text[0].text.content
       ) {
-        const pageTitle = page.properties.Name.title[0].plain_text as string
-        const pageURL = page.url as string
-        const pageID = page.id as string
+        invalidPageProperties.pageURL = page.url as string
+        invalidPageProperties.pageID = page.id as string
+        const pageTitle = page.properties.Name.title[0]
 
-        invalidPages.invalidPagesInSnapshot.push({
-          pageTitle,
-          pageURL,
-          pageID,
-        })
+        if (pageTitle) {
+          Object.assign(invalidPageProperties, {
+            pageTitle: pageTitle.plain_text,
+          })
+        }
+        invalidPages.invalidPagesInSnapshot.push(invalidPageProperties)
       }
     })
 
