@@ -17,7 +17,7 @@ const router = Router()
 
 // cookies validation
 router.use(
-  ['/youtube/videos', '/notion'],
+  ['/youtube/videos', '/notion', '/sync'],
   (req: Request, res: Response, next: NextFunction) => {
     const cookieHeader = req.headers.cookie
 
