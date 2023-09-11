@@ -17,6 +17,7 @@ import {
   RawPlaylistItem,
   RawVideoData,
 } from '../types/videoTypes'
+import { PLAYLIST_ID } from '../constants'
 
 // ------------- HANDLERS ----------------
 
@@ -63,7 +64,7 @@ export async function handleInitialLoad(req: Request, res: Response) {
       const videosOptions: VideosOptions = {
         part: 'snippet',
         maxResults: '50',
-        playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
+        playlistId: PLAYLIST_ID,
       }
 
       const rawPlaylistItems: RawPlaylistItem[] =

@@ -2,6 +2,7 @@ import { parse } from 'cookie'
 import { Request, Response } from 'express'
 import { getYoutubeVideos, generateQueryString } from '../getYoutubeVideos'
 import { VideosOptions } from '../types/videoTypes'
+import { PLAYLIST_ID } from '../constants'
 
 // ------------- FUNCTIONS ----------------
 
@@ -20,7 +21,7 @@ export async function handleGetYoutubeVideos(req: Request, res: Response) {
     const options: VideosOptions = {
       part: 'snippet',
       maxResults: '50',
-      playlistId: 'PLogYAbXxpcswCx7liCyjv05nGPggNiLOh',
+      playlistId: PLAYLIST_ID,
     }
 
     const qs = generateQueryString(options)
