@@ -33,6 +33,8 @@ import {
 } from '../utils/syncHelpers'
 import { PLAYLIST_ID } from '../constants'
 
+//! add response json object with message
+
 export async function sync(req: Request, res: Response) {
   const cookieHeader = req.headers.cookie
 
@@ -48,6 +50,10 @@ export async function sync(req: Request, res: Response) {
   const database_id = process.env.NOTION_DATABASE_ID as string
   const notionMainData = await getNotionDatabaseItems(database_id)
   const notionMainDataIDs: NotionDataIDs[] = getNotionDataIDs(notionMainData)
+
+  const notionMainVideosIDs = notionMainDataIDs.map(
+    (video) => video.youtubeVideoID
+  )
 
   //* get videos from notion snapshot DB
   const snapshot_id = process.env.NOTION_SNAPSHOT_ID as string
@@ -83,14 +89,12 @@ export async function sync(req: Request, res: Response) {
   //* compare with snapshot DB = see which videos are new
   const newRawPlaylistItems = rawPlaylistItems.filter(
     (video: RawPlaylistItem) => {
-      return !notionSnapshotVideosIDs.includes(video.snippet.resourceId.videoId)
+      return (
+        !notionSnapshotVideosIDs.includes(video.snippet.resourceId.videoId) &&
+        !notionMainVideosIDs.includes(video.snippet.resourceId.videoId)
+      )
     }
   )
-
-  // if something has been deleted from snapshot (accident) it appears as new video
-  // fix: need to check if video missing in snapshot appears in main
-  // if video not in snapshot and is in main -> accident, add it to snapshot
-  // if video not in snapshot and not in main -> add it to notion
 
   const newFormattedVideos: PlaylistItem[] | [] =
     formatPlaylistItems(newRawPlaylistItems)
@@ -214,20 +218,35 @@ export async function sync(req: Request, res: Response) {
     })
   }
 
-  if (conditions.deletedFromSnapshot && !conditions.deletedFromMain) {
+  const accidentallyDeletedFromSnapshot = rawPlaylistItems.filter(
+    (video: RawPlaylistItem) => {
+      return (
+        !notionSnapshotVideosIDs.includes(video.snippet.resourceId.videoId) &&
+        notionMainVideosIDs.includes(video.snippet.resourceId.videoId)
+      )
+    }
+  )
+
+  if (conditions.deletedFromSnapshot) {
     //* post to notion snapshot DB (new video objects)
     console.log(
       'posting new video to snapshot - only deleted from snapshot case'
     )
-    const newDataToSnapshotDB = formatSnapshotData(newRawPlaylistItems)
+    const newDataToSnapshotDB = formatSnapshotData(
+      accidentallyDeletedFromSnapshot
+    )
+    console.log(
+      'these are accidentally deleted videos from snapshot',
+      newDataToSnapshotDB
+    )
     await postDelayedRequests(newDataToSnapshotDB, postToNotionSnapshot, 350)
-    res.json({
-      message: 'added following videos to snapshot',
-      videos: newDataToSnapshotDB,
-    })
   }
 
-  if (!conditions.deletedFromMain && !conditions.newYoutubeVideos) {
+  if (
+    !conditions.deletedFromMain &&
+    !conditions.newYoutubeVideos &&
+    !conditions.deletedFromSnapshot
+  ) {
     res.json({
       message: 'everything is in sync!',
     })
