@@ -1,3 +1,5 @@
+// test
+
 import { Request, Response } from 'express'
 import { getNotionDatabaseItems } from '../getNotionVideos'
 import { NotionDataIDs, getNotionDataIDs } from '../utils/notionHelpers'
@@ -34,8 +36,11 @@ import {
 import { PLAYLIST_ID } from '../constants'
 
 //! add response json object with message
+//! handle duplicate videos
+//! handle deleting videos directly from youtube
 
-export async function sync(req: Request, res: Response) {
+// TODO check passing access token from middleware to this function
+export async function sync(req: Request, res: Response, accessToken?: string) {
   const cookieHeader = req.headers.cookie
 
   if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -47,8 +52,10 @@ export async function sync(req: Request, res: Response) {
   const { access_token } = parsedCookies
 
   //* get videos from notion main DB
-  const database_id = process.env.NOTION_DATABASE_ID as string
-  const notionMainData = await getNotionDatabaseItems(database_id)
+  // TODO use pascal case for defining constants
+  // TODO consider two functions: notionService.getMainDbItems() notionService.getSnapshotItems
+  const databaseId = process.env.NOTION_DATABASE_ID as string
+  const notionMainData = await getNotionDatabaseItems(databaseId)
   const notionMainDataIDs: NotionDataIDs[] = getNotionDataIDs(notionMainData)
 
   const notionMainVideosIDs = notionMainDataIDs.map(
@@ -70,8 +77,6 @@ export async function sync(req: Request, res: Response) {
     notionMainDataIDs,
     notionSnapshotDataIDs
   )
-
-  //! handle duplicate videos
 
   //* get youtube videos in case something has been added
   const videosOptions: VideosOptions = {
@@ -95,7 +100,7 @@ export async function sync(req: Request, res: Response) {
     }
   )
 
-  const newFormattedVideos: PlaylistItem[] | [] =
+  const newFormattedVideos: PlaylistItem[] =
     formatPlaylistItems(newRawPlaylistItems)
   console.log('these are all new formatted videos: ', newFormattedVideos)
 
@@ -112,6 +117,10 @@ export async function sync(req: Request, res: Response) {
   )
   const durations: VideoDuration[] = getYoutubeVideosDuration(rawVideosData)
 
+  /**
+   *   const isDeletedFromMain = difference.deletedFromMain.length > 0
+   *   const hasNewYoutubeVideos = newFormattedVideos.length > 0
+   */
   const conditions = {
     deletedFromMain: difference.deletedFromMain.length > 0,
     deletedFromSnapshot: difference.deletedFromSnapshot.length > 0,
@@ -176,6 +185,12 @@ export async function sync(req: Request, res: Response) {
       difference.deletedFromMain,
       notionSnapshotData
     )
+
+    // const deleteById = async (id: string) => {
+    //   const qs = new URLSearchParams({ id })
+    //   return deleteYoutubePlaylistItem(access_token, qs)
+    // }
+    // const [first, second]  = await Promise.all(playlistItemsIDsToDelete.map(deleteById))
 
     //* delete request to youtube playlist (remove videos deleted in notion)
     console.log('deleting from youtube')
