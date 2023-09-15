@@ -20,7 +20,7 @@ export function findPlaylistItemsIDsInSnapshotToDelete(
   })
   return playlistItemsIDs
 }
-
+// TODO check lodash/difference(by)
 export function findDeletedVideos(
   mainData: NotionDataIDs[],
   snapshotData: NotionDataIDs[]
