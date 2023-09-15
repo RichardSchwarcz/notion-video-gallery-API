@@ -11,7 +11,7 @@ import {
   handleInitialLoad,
 } from './handlers/notionDatabaseHandler'
 import { sync } from './handlers/sync'
-import { getNotionDatabaseItems } from './getNotionVideos'
+import { getNotionData } from './utils/notionHelpers'
 
 const router = Router()
 
@@ -66,21 +66,15 @@ type InvalidPages = {
   invalidPagesInSnapshot: InvalidPage[]
 }
 
-const getInvalidPages = async () => {
+const getInvalidPages = async (mainData: any, snapshotData: any) => {
   try {
-    const database_id = process.env.NOTION_DATABASE_ID as string
-    const notionMainData = await getNotionDatabaseItems(database_id)
-
-    const snapshot_id = process.env.NOTION_SNAPSHOT_ID as string
-    const notionSnapshotData = await getNotionDatabaseItems(snapshot_id)
-
     const invalidPages: InvalidPages = {
       invalidPagesInMain: [],
       invalidPagesInSnapshot: [],
     }
 
     // random page in main DB without valid URL
-    notionMainData.results.map((page: any) => {
+    mainData.results.map((page: any) => {
       const invalidPageProperties = {
         pageTitle: '',
         pageURL: '',
@@ -102,7 +96,7 @@ const getInvalidPages = async () => {
     })
 
     // random page in snapshot DB without valid URL
-    notionSnapshotData.results.map((page: any) => {
+    snapshotData.results.map((page: any) => {
       const invalidPageProperties = {
         pageTitle: '',
         pageURL: '',
@@ -150,19 +144,21 @@ router.get('/notion/videos', handleGetNotionVideos)
 router.get('/notion/load', handleInitialLoad)
 
 router.get('/sync', async (req, res) => {
-  const invalidPages = await getInvalidPages()
+  const { mainData, snapshotData } = await getNotionData()
+  const invalidPages = await getInvalidPages(mainData, snapshotData)
   if (invalidPages) {
     const { invalidPagesInMain, invalidPagesInSnapshot } = invalidPages
     if (invalidPagesInMain.length > 0 || invalidPagesInSnapshot.length > 0) {
       res.redirect('/api/sync/invalid-pages')
     } else {
-      return sync(req, res)
+      return sync(req, res, mainData, snapshotData)
     }
   }
 })
 
 router.get('/sync/invalid-pages', async (req, res) => {
-  const pages = await getInvalidPages()
+  const { mainData, snapshotData } = await getNotionData()
+  const pages = await getInvalidPages(mainData, snapshotData)
 
   res.json({ pages })
 })
