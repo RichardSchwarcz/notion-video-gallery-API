@@ -1,6 +1,5 @@
 import { Request, Response } from 'express'
-import { getNotionDatabaseItems } from '../getNotionVideos'
-import { NotionDataIDs, getNotionDataIDs } from '../utils/notionHelpers'
+import { getNotionIDs } from '../utils/notionHelpers'
 import {
   formatPlaylistItems,
   getVideosIds,
@@ -16,7 +15,6 @@ import {
   RawPlaylistItem,
   RawVideoData,
   VideoDuration,
-  VideoSchema,
   VideosOptions,
 } from '../types/videoTypes'
 import {
@@ -33,9 +31,16 @@ import {
 } from '../utils/syncHelpers'
 import { PLAYLIST_ID } from '../constants'
 
-//! add response json object with message
+//! handle duplicate videos
+//! handle deleting videos directly from youtube
 
-export async function sync(req: Request, res: Response) {
+// TODO check passing access token from middleware to this function
+export async function sync(
+  req: Request,
+  res: Response,
+  mainData: any,
+  snapshotData: any
+) {
   const cookieHeader = req.headers.cookie
 
   if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -46,32 +51,18 @@ export async function sync(req: Request, res: Response) {
   const parsedCookies = parse(cookieHeader)
   const { access_token } = parsedCookies
 
-  //* get videos from notion main DB
-  const database_id = process.env.NOTION_DATABASE_ID as string
-  const notionMainData = await getNotionDatabaseItems(database_id)
-  const notionMainDataIDs: NotionDataIDs[] = getNotionDataIDs(notionMainData)
-
-  const notionMainVideosIDs = notionMainDataIDs.map(
-    (video) => video.youtubeVideoID
-  )
-
-  //* get videos from notion snapshot DB
-  const snapshot_id = process.env.NOTION_SNAPSHOT_ID as string
-  const notionSnapshotData = await getNotionDatabaseItems(snapshot_id)
-  const notionSnapshotDataIDs: NotionDataIDs[] =
-    getNotionDataIDs(notionSnapshotData)
-
-  const notionSnapshotVideosIDs = notionSnapshotDataIDs.map(
-    (video) => video.youtubeVideoID
-  )
+  const {
+    notionMainDataIDs,
+    notionMainVideosIDs,
+    notionSnapshotDataIDs,
+    notionSnapshotVideosIDs,
+  } = getNotionIDs(mainData, snapshotData)
 
   //* compare main and snapshot -> see which videos have been deleted from main
   const difference: DifferenceObject = findDeletedVideos(
     notionMainDataIDs,
     notionSnapshotDataIDs
   )
-
-  //! handle duplicate videos
 
   //* get youtube videos in case something has been added
   const videosOptions: VideosOptions = {
@@ -95,35 +86,25 @@ export async function sync(req: Request, res: Response) {
     }
   )
 
-  const newFormattedVideos: PlaylistItem[] | [] =
+  // format new videos
+  const newFormattedVideos: PlaylistItem[] =
     formatPlaylistItems(newRawPlaylistItems)
   console.log('these are all new formatted videos: ', newFormattedVideos)
 
-  //* get durations for new videos
-  const videosDataOptions: VideosOptions = {
-    part: 'contentDetails',
-    maxResults: '50',
-    id: getVideosIds(newFormattedVideos),
-  }
-  const rawVideosData: RawVideoData[] = await getYoutubeVideosRecursively(
-    access_token,
-    'videos',
-    videosDataOptions
-  )
-  const durations: VideoDuration[] = getYoutubeVideosDuration(rawVideosData)
+  const isDeletedFromMain = difference.deletedFromMain.length > 0
+  const hasNewYoutubeVideos = newFormattedVideos.length > 0
+  const isDeletedFromSnapshot = difference.deletedFromSnapshot.length > 0
 
-  const conditions = {
-    deletedFromMain: difference.deletedFromMain.length > 0,
-    deletedFromSnapshot: difference.deletedFromSnapshot.length > 0,
-    newYoutubeVideos: newFormattedVideos.length > 0,
-  }
+  // -----------------------------------------------------------------------------------------
 
-  if (conditions.deletedFromMain && conditions.newYoutubeVideos) {
+  let messageObject = {}
+
+  if (isDeletedFromMain) {
     //* get video ID as playlist item from snapshot data
     // each video in youtube playlist has its own unique ID for that playlist
     const playlistItemsIDsToDelete = findPlaylistItemsIDsInSnapshotToDelete(
       difference.deletedFromMain,
-      notionSnapshotData
+      snapshotData
     )
 
     //* delete request to youtube playlist (remove videos deleted in notion)
@@ -137,70 +118,33 @@ export async function sync(req: Request, res: Response) {
       }
     }
 
-    //* post to notion snapshot DB (remove difference)
     console.log('removing difference deleting from snapshot')
     const notionPagesIDs = difference.deletedFromMain.map(
       (page) => page.notionPageID
     )
     await postDelayedRequests(notionPagesIDs, archiveNotionPage, 350)
 
-    //* post to notion main DB (new video objects)
-    console.log('posting new video to main', newFormattedVideos)
-    const newDataToMainDB = combineVideoArrays(newFormattedVideos, durations)
-    await postDelayedRequests(newDataToMainDB, postToNotionDatabase, 350)
-
-    //* post to notion snapshot DB (new video objects)
-    console.log('posting new video to snapshot')
-    const newDataToSnapshotDB = formatSnapshotData(newRawPlaylistItems)
-    await postDelayedRequests(newDataToSnapshotDB, postToNotionSnapshot, 350)
-
-    let message: {
-      message_del: string
-      videos: NotionDataIDs[]
-      message_add: string
-      newVideos: VideoSchema[]
-    } = {
-      message_del: 'deleted following videos from youtube playlist',
-      videos: difference.deletedFromMain,
-      message_add: 'added following videos',
-      newVideos: newDataToMainDB,
+    const message = {
+      message_deleted: 'deleted following videos from youtube playlist',
+      videos_deleted: difference.deletedFromMain,
     }
-
-    res.json(message)
+    Object.assign(messageObject, message)
   }
 
-  if (conditions.deletedFromMain && !conditions.newYoutubeVideos) {
-    //* get video ID as playlist item from snapshot data
-    // each video in youtube playlist has its own unique ID for that playlist
-    const playlistItemsIDsToDelete = findPlaylistItemsIDsInSnapshotToDelete(
-      difference.deletedFromMain,
-      notionSnapshotData
-    )
-
-    //* delete request to youtube playlist (remove videos deleted in notion)
-    console.log('deleting from youtube')
-    for (const item of playlistItemsIDsToDelete) {
-      const qs = new URLSearchParams({ id: item })
-      const res = await deleteYoutubePlaylistItem(access_token, qs)
-
-      if (res.status !== 204) {
-        break
-      }
+  if (hasNewYoutubeVideos) {
+    //* get durations for new videos
+    const videosDataOptions: VideosOptions = {
+      part: 'contentDetails',
+      maxResults: '50',
+      id: getVideosIds(newFormattedVideos),
     }
-
-    //* post to notion snapshot DB (remove difference)
-    console.log('removing difference deleting from snapshot')
-    const notionPagesIDs = difference.deletedFromMain.map(
-      (page) => page.notionPageID
+    const rawVideosData: RawVideoData[] = await getYoutubeVideosRecursively(
+      access_token,
+      'videos',
+      videosDataOptions
     )
-    await postDelayedRequests(notionPagesIDs, archiveNotionPage, 350)
-  }
+    const durations: VideoDuration[] = getYoutubeVideosDuration(rawVideosData)
 
-  if (
-    !conditions.deletedFromMain &&
-    !conditions.deletedFromSnapshot &&
-    conditions.newYoutubeVideos
-  ) {
     //* post to notion main DB (new video objects)
     console.log('posting new video to main - only add case')
     const newDataToMainDB = combineVideoArrays(newFormattedVideos, durations)
@@ -211,10 +155,11 @@ export async function sync(req: Request, res: Response) {
     const newDataToSnapshotDB = formatSnapshotData(newRawPlaylistItems)
     await postDelayedRequests(newDataToSnapshotDB, postToNotionSnapshot, 350)
 
-    res.json({
-      message: 'new videos added',
-      videos: newDataToMainDB,
-    })
+    const message = {
+      message_added_new: 'new videos added',
+      videos_added_new: newDataToMainDB,
+    }
+    Object.assign(messageObject, message)
   }
 
   const accidentallyDeletedFromSnapshot = rawPlaylistItems.filter(
@@ -226,7 +171,7 @@ export async function sync(req: Request, res: Response) {
     }
   )
 
-  if (conditions.deletedFromSnapshot) {
+  if (isDeletedFromSnapshot) {
     //* post to notion snapshot DB (new video objects)
     console.log(
       'posting new video to snapshot - only deleted from snapshot case'
@@ -239,15 +184,20 @@ export async function sync(req: Request, res: Response) {
       newDataToSnapshotDB
     )
     await postDelayedRequests(newDataToSnapshotDB, postToNotionSnapshot, 350)
+
+    const message = {
+      message_added_to_snapshot:
+        'accidentally deleted videos added back to snapshot DB',
+      videos_added_to_snapshot: newDataToSnapshotDB,
+    }
+    Object.assign(messageObject, message)
   }
 
-  if (
-    !conditions.deletedFromMain &&
-    !conditions.newYoutubeVideos &&
-    !conditions.deletedFromSnapshot
-  ) {
-    res.json({
+  if (!isDeletedFromMain && !hasNewYoutubeVideos && !isDeletedFromSnapshot) {
+    const message = {
       message: 'everything is in sync!',
-    })
+    }
+    Object.assign(messageObject, message)
   }
+  res.json(messageObject)
 }
