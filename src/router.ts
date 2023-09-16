@@ -12,8 +12,25 @@ import {
 } from './handlers/notionDatabaseHandler'
 import { sync } from './handlers/sync'
 import { getNotionData } from './utils/notionHelpers'
+import cors from 'cors'
 
 const router = Router()
+
+const allowedOrigins = [
+  'http://localhost:3000', // Add your development environment URL here
+]
+
+const corsOptions = {
+  origin: (origin: any, callback: any) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+}
+
+router.use(cors(corsOptions))
 
 // cookies validation
 router.use(
