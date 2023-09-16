@@ -16,9 +16,7 @@ import cors from 'cors'
 
 const router = Router()
 
-const allowedOrigins = [
-  'http://localhost:3000', // Add your development environment URL here
-]
+const allowedOrigins = ['http://localhost:3000']
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
