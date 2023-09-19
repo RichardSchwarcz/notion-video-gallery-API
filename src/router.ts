@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from 'express'
 import {
   handleGetOAuthTokens,
-  handleOAuthURL,
+  handleGetOAuthURL,
   handleRefreshAccessToken,
 } from './handlers/googleOAuthHandler'
 import { handleGetYoutubeVideos } from './handlers/youtubeVideosHandler'
@@ -142,7 +142,7 @@ const getInvalidPages = async (mainData: any, snapshotData: any) => {
 }
 
 // auth
-router.get('/youtube/auth', handleOAuthURL)
+router.get('/youtube/auth', handleGetOAuthURL)
 
 router.get('/youtube/auth/redirect', handleGetOAuthTokens)
 
