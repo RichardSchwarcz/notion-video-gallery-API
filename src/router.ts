@@ -21,6 +21,7 @@ const allowedOrigins = [
   'https://notion-video-gallery-client.vercel.app',
   'https://notion-video-gallery.onrender.com',
 ]
+//test
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
