@@ -19,6 +19,7 @@ const router = Router()
 const allowedOrigins = [
   'http://localhost:3000',
   'https://notion-video-gallery-client.vercel.app',
+  'https://notion-video-gallery.onrender.com',
 ]
 
 const corsOptions = {
