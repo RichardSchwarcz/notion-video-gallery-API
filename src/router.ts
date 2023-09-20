@@ -16,7 +16,10 @@ import cors from 'cors'
 
 const router = Router()
 
-const allowedOrigins = ['http://localhost:3000']
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://notion-video-gallery-client.vercel.app',
+]
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
