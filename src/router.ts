@@ -20,6 +20,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://notion-video-gallery-client.vercel.app',
 ]
+//test
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
