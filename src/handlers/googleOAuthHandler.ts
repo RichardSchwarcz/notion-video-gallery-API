@@ -6,9 +6,9 @@ import {
 import { parse, serialize } from 'cookie'
 import { getGoogleOAuthURL } from '../googleOAuthURL'
 
-export async function handleOAuthURL(req: Request, res: Response) {
+export async function handleGetOAuthURL(req: Request, res: Response) {
   res.json({
-    generated: getGoogleOAuthURL(),
+    googleOAuthURL: getGoogleOAuthURL(),
   })
 }
 
@@ -30,6 +30,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
       tokens.refresh_token,
       {
         httpOnly: true,
+        maxAge: 60 * 60 * 24 * 30,
         path: '/api',
       }
     )
@@ -40,6 +41,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
       code: code,
       tokens: tokens,
     })
+    // res.redirect('http://localhost:3000/video-gallery')
   } catch (error: any) {
     console.log(error.message)
     res.redirect('/api/youtube/auth')

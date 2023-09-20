@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from 'express'
 import {
   handleGetOAuthTokens,
-  handleOAuthURL,
+  handleGetOAuthURL,
   handleRefreshAccessToken,
 } from './handlers/googleOAuthHandler'
 import { handleGetYoutubeVideos } from './handlers/youtubeVideosHandler'
@@ -16,7 +16,11 @@ import cors from 'cors'
 
 const router = Router()
 
-const allowedOrigins = ['http://localhost:3000']
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://notion-video-gallery-client.vercel.app',
+]
+//test
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
@@ -26,6 +30,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'))
     }
   },
+  credentials: true,
 }
 
 router.use(cors(corsOptions))
@@ -141,7 +146,7 @@ const getInvalidPages = async (mainData: any, snapshotData: any) => {
 }
 
 // auth
-router.get('/youtube/auth', handleOAuthURL)
+router.get('/youtube/auth', handleGetOAuthURL)
 
 router.get('/youtube/auth/redirect', handleGetOAuthTokens)
 
