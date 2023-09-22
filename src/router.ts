@@ -40,14 +40,15 @@ router.use(
   ['/youtube/videos', '/notion', '/sync'],
   (req: Request, res: Response, next: NextFunction) => {
     const cookieHeader = req.headers.cookie
-    console.log(cookieHeader)
+    const headers = req.headers
+    console.log(headers)
 
     // check cookies header
     if (!cookieHeader || typeof cookieHeader !== 'string') {
       console.log(
         'Cookie header is missing or not a string. Redirecting to auth from middleware'
       )
-      res.redirect('/api/youtube/auth')
+      // res.redirect('/api/youtube/auth')
       return
     }
 

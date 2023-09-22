@@ -23,6 +23,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
       httpOnly: true,
       maxAge: tokens.expires_in - 200,
       path: '/api',
+      secure: true,
     })
 
     const refreshTokenCookie = serialize(
@@ -32,6 +33,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 30,
         path: '/api',
+        secure: true,
       }
     )
 
