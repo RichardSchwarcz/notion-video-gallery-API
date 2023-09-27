@@ -48,7 +48,7 @@ router.use(
       console.log(
         'Cookie header is missing or not a string. Redirecting to auth from middleware'
       )
-      // res.redirect('/api/youtube/auth')
+
       return
     }
 
