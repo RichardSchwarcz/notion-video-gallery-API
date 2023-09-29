@@ -41,7 +41,7 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
     )
 
     const isProduction = process.env.NODE_ENV === 'production'
-    const CLIENT_URL = isProduction ? URLs.auth.prod : URLs.auth.dev
+    const CLIENT_URL = isProduction ? URLs.client.prod : URLs.client.dev
 
     res
       .cookie('access_token', tokens.access_token, {
