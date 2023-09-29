@@ -4,7 +4,9 @@ import router from './router'
 const app = express()
 
 app.get('/', (req: Request, res: Response) => {
-  res.send('Welcome!')
+  res.json({
+    Auth: 'http://localhost:8000/api/youtube/auth',
+  })
 })
 
 app.use('/api', router)

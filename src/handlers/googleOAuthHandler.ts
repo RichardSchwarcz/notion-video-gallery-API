@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 import { Request, Response } from 'express'
 import {
   getGoogleOAuthTokens,
@@ -5,6 +7,7 @@ import {
 } from '../getGoogleTokens'
 import { parse, serialize } from 'cookie'
 import { getGoogleOAuthURL } from '../googleOAuthURL'
+import { URLs } from '../utils/url'
 
 export async function handleGetOAuthURL(req: Request, res: Response) {
   res.json({
@@ -37,13 +40,23 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
       }
     )
 
-    res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie])
+    const isProduction = process.env.NODE_ENV === 'production'
+    const CLIENT_URL = isProduction ? URLs.auth.prod : URLs.auth.dev
 
-    res.json({
-      code: code,
-      tokens: tokens,
-    })
-    // res.redirect('http://localhost:3000/video-gallery')
+    res
+      .cookie('access_token', tokens.access_token, {
+        httpOnly: true,
+        maxAge: tokens.expires_in - 200,
+        path: '/api',
+        secure: true,
+      })
+      .cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 30,
+        path: '/api',
+        secure: true,
+      })
+      .redirect(CLIENT_URL)
   } catch (error: any) {
     console.log(error.message)
     res.redirect('/api/youtube/auth')
