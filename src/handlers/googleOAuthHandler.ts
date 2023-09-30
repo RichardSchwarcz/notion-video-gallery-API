@@ -19,29 +19,15 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
   // get code from URL
   const code = req.query.code as string
 
+  const cookieHeader = req.headers.cookie
+  console.log(cookieHeader, 'TOTPO')
+
   try {
     const tokens = await getGoogleOAuthTokens(code)
+    console.log(tokens)
 
-    const accessTokenCookie = serialize('access_token', tokens.access_token, {
-      httpOnly: true,
-      maxAge: tokens.expires_in - 200,
-      path: '/api',
-      secure: true,
-    })
-
-    const refreshTokenCookie = serialize(
-      'refresh_token',
-      tokens.refresh_token,
-      {
-        httpOnly: true,
-        maxAge: 60 * 60 * 24 * 30,
-        path: '/api',
-        secure: true,
-      }
-    )
-
-    const isProduction = process.env.NODE_ENV === 'production'
-    const CLIENT_URL = isProduction ? URLs.client.prod : URLs.client.dev
+    // const isProduction = process.env.NODE_ENV === 'production'
+    // const CLIENT_URL = isProduction ? URLs.client.prod : URLs.client.dev
 
     res
       .cookie('access_token', tokens.access_token, {
@@ -56,7 +42,8 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
         path: '/api',
         secure: true,
       })
-      .redirect(CLIENT_URL)
+      // .status(200)
+      .send('hi')
   } catch (error: any) {
     console.log(error.message)
     res.redirect('/api/youtube/auth')
@@ -78,17 +65,18 @@ export async function handleRefreshAccessToken(req: Request, res: Response) {
       parsedCookies.refresh_token
     )
 
-    const accessTokenCookie = serialize('access_token', response.access_token, {
-      httpOnly: true,
-      maxAge: response.expires_in - 200,
-      path: '/api',
-    })
+    const isProduction = process.env.NODE_ENV === 'production'
+    const CLIENT_URL = isProduction ? URLs.client.prod : URLs.client.dev
 
-    res.setHeader('Set-Cookie', accessTokenCookie)
-
-    res.json({
-      response: response,
-    })
+    res
+      .cookie('access_token', response.access_token, {
+        httpOnly: true,
+        path: '/api',
+        secure: true,
+      })
+      .json({
+        message: 'x',
+      })
   } catch (error: any) {
     console.log(error.message)
   }

@@ -19,7 +19,6 @@ const router = Router()
 const allowedOrigins = [
   'http://localhost:3000',
   'https://notion-video-gallery-client.vercel.app',
-  'https://notion-video-gallery.onrender.com',
 ]
 
 const corsOptions = {
@@ -152,11 +151,9 @@ router.get('/youtube/auth', handleGetOAuthURL)
 
 router.get('/youtube/auth/redirect', handleGetOAuthTokens)
 
-// ! add restricted middleware. no post request allowed without refresh token
 router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 
 // youtube videos
-// ! add restricted middleware. no post request allowed without access token
 router.get('/youtube/videos', handleGetYoutubeVideos)
 
 // notion database
@@ -164,6 +161,15 @@ router.get('/notion/videos', handleGetNotionVideos)
 
 // load notion database
 router.get('/notion/load', handleInitialLoad)
+
+router.get('/test', (req, res) => {
+  res
+    .cookie('test', 'testvalue', {
+      httpOnly: true,
+      secure: true,
+    })
+    .send('serus')
+})
 
 router.get('/sync', async (req, res) => {
   const { mainData, snapshotData } = await getNotionData()
