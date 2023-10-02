@@ -34,6 +34,20 @@ const corsOptions = {
 
 router.use(cors(corsOptions))
 
+router.use(function (req, res, next) {
+  res.header('Access-Control-Allow-Credentials', 'true')
+  res.header('Access-Control-Allow-Origin', req.headers.origin)
+  res.header(
+    'Access-Control-Allow-Methods',
+    'GET,PUT,POST,DELETE,UPDATE,OPTIONS'
+  )
+  res.header(
+    'Access-Control-Allow-Headers',
+    'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept'
+  )
+  next()
+})
+
 // cookies validation
 router.use(
   ['/youtube/videos', '/notion', '/sync'],
@@ -147,11 +161,11 @@ const getInvalidPages = async (mainData: any, snapshotData: any) => {
 }
 
 // auth
-router.get('/youtube/auth', handleGetOAuthURL)
+router.get('/auth/get-url', handleGetOAuthURL)
 
-router.get('/youtube/auth/redirect', handleGetOAuthTokens)
+router.get('/auth/get-tokens', handleGetOAuthTokens)
 
-router.get('/youtube/auth/refresh', handleRefreshAccessToken)
+// router.get('/youtube/auth/refresh', handleRefreshAccessToken)
 
 // youtube videos
 router.get('/youtube/videos', handleGetYoutubeVideos)
@@ -161,15 +175,6 @@ router.get('/notion/videos', handleGetNotionVideos)
 
 // load notion database
 router.get('/notion/load', handleInitialLoad)
-
-router.get('/test', (req, res) => {
-  res
-    .cookie('test', 'testvalue', {
-      httpOnly: true,
-      secure: true,
-    })
-    .send('serus')
-})
 
 router.get('/sync', async (req, res) => {
   const { mainData, snapshotData } = await getNotionData()
