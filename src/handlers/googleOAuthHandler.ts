@@ -5,13 +5,28 @@ import {
   getGoogleOAuthTokens,
   refreshGoogleOAuthAccessToken,
 } from '../getGoogleTokens'
-import { parse, serialize } from 'cookie'
-import { getGoogleOAuthURL } from '../googleOAuthURL'
+import { parse } from 'cookie'
 import { URLs } from '../utils/url'
 
-export async function handleGetOAuthURL(req: Request, res: Response) {
+export async function handleGetOAuthURL(_req: Request, res: Response) {
+  const scopes = ['https://www.googleapis.com/auth/youtube']
+  const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth'
+
+  const options = {
+    redirect_uri: process.env.GOOGLE_REDIRECT_URL as string,
+    client_id: process.env.GOOGLE_CLIENT_ID as string,
+    access_type: 'offline',
+    response_type: 'code',
+    prompt: 'consent',
+    scope: scopes.join(' '),
+  }
+
+  const qs = new URLSearchParams(options)
+
+  const OAuthURL = `${rootURL}?${qs.toString()}`
+
   res.json({
-    googleOAuthURL: getGoogleOAuthURL(),
+    googleOAuthURL: OAuthURL,
   })
 }
 
@@ -19,20 +34,15 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
   // get code from URL
   const code = req.query.code as string
 
-  const cookieHeader = req.headers.cookie
-  console.log(cookieHeader, 'TOTPO')
-
   try {
     const tokens = await getGoogleOAuthTokens(code)
     console.log(tokens)
-
-    // const isProduction = process.env.NODE_ENV === 'production'
-    // const CLIENT_URL = isProduction ? URLs.client.prod : URLs.client.dev
+    console.log(res.getHeaders(), 'first')
+    console.log(req.headers)
 
     res
       .cookie('access_token', tokens.access_token, {
         httpOnly: true,
-        maxAge: tokens.expires_in - 200,
         path: '/api',
         secure: true,
       })
@@ -42,11 +52,12 @@ export async function handleGetOAuthTokens(req: Request, res: Response) {
         path: '/api',
         secure: true,
       })
-      // .status(200)
-      .send('hi')
+    res.send('hi')
+    // .redirect(process.env.CLIENT_URL as string)
+    console.log(res.getHeaders(), 'second')
   } catch (error: any) {
     console.log(error.message)
-    res.redirect('/api/youtube/auth')
+    res.redirect('/api/auth')
   }
 }
 
